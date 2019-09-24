@@ -24,7 +24,6 @@ systemctl start mariadb
 echo "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('fkg7h4f3');FLUSH PRIVILEGES;" | mysql --password=
 echo "create database wordpress;" | mysql --password=fkg7h4f3
 echo "grant all privileges on wordpress.* to 'wordpress'@'localhost' identified by '1-Wordpress';" | mysql --password=fkg7h4f3
-
 mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.old
 wget -P /etc/httpd/conf/ https://raw.githubusercontent.com/vlembikov/nginx-apache-mariadb/master/httpd.conf
 wget -P /etc/httpd/conf.d/ https://raw.githubusercontent.com/vlembikov/nginx-apache-mariadb/master/wordpress.httpd.conf
@@ -32,11 +31,18 @@ wget -P /etc/httpd/conf.d/ https://raw.githubusercontent.com/vlembikov/nginx-apa
 #Создаем необходимые каталоги для сайта и загружаем его туда
 mkdir -p /var/www/wordpress/{www,tmp}
 mkdir -p /var/www/wordpress/log/{nginx,apache}
-wget -P /var/www/wordpress/www/ https://ru.wordpress.org/latest-ru_RU.zip
-unzip /var/www/wordpress/www/latest-ru_RU.zip -d /var/www/wordpress/www/
-mv /var/www/wordpress/www/wordpress/* /var/www/wordpress/www/
-rmdir /var/www/wordpress/www/wordpress
-rm -rf /var/www/wordpress/www/latest-ru_RU.zip
+wget -P /var/www/wordpress/www/ https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+php /var/www/wordpress/www/wp-cli.phar core download --path=/var/www/wordpress/www --locale=ru_RU --allow-root
+php /var/www/wordpress/www/wp-cli.phar core config --path=/var/www/wordpress/www --dbname=wordpress --dbuser=wordpress --dbpass=1-Wordpress --dbhost=localhost --dbprefix=prefix_ --locale=ru_RU --allow-root
+php /var/www/wordpress/www/wp-cli.phar core install --path=/var/www/wordpress/www --url=http://wordpress.local/ --title=sitetitle --admin_user=admin --admin_password=admin --admin_email=admin@localsite.com --allow-root
+php /var/www/wordpress/www/wp-cli.phar rewrite structure "/%postname%/" --path=/var/www/wordpress/www --allow-root 
+php /var/www/wordpress/www/wp-cli.phar rewrite flush --path=/var/www/wordpress/www --allow-root
+rm -rf /var/www/wordpress/www/wp-cli.phar
+
+#Правим ссылки на сайт так как wp-cli каким то чудом добавляет путь до сайта
+echo "UPDATE wordpress.prefix_options SET option_value='http://wordpress.local/' WHERE  option_id='1';" | mysql --password=fkg7h4f3
+echo "UPDATE wordpress.prefix_options SET option_value='http://wordpress.local/' WHERE  option_id='2';" | mysql --password=fkg7h4f3
+
 chown -R apache:apache /var/www/wordpress/*
 chmod -R 775 /var/www/wordpress/*
 
