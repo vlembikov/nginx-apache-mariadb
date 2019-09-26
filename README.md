@@ -1,6 +1,6 @@
 # Для отображения сайта необходимо в host добавить запись
 
-10.1.2.125    wordpress.local 
+IP вашего сервера    wordpress.local 
 
 # СУБД MariaDB для WP
 dbname = wordpress
